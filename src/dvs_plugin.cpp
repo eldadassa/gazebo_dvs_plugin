@@ -141,6 +141,15 @@ namespace gazebo
     else
       gzwarn << "[gazebo_ros_dvs_camera] Please specify a DVS threshold." << endl;
 
+    this->subsample_factor_x = 0;
+    if (_sdf->HasElement("subsampleFactorX"))
+      this->subsample_factor_x = _sdf->GetElement("subsampleFactorX")->Get<uint>();
+
+    this->subsample_factor_y = 0;
+    if (_sdf->HasElement("subsampleFactorY"))
+      this->subsample_factor_y = _sdf->GetElement("subsampleFactorY")->Get<uint>();
+       
+
     event_pub_ = node_handle_.advertise<dvs_msgs::EventArray>(topic, 10, 10.0);
 
     this->newFrameConnection = this->camera->ConnectNewImageFrame(
@@ -167,10 +176,14 @@ float rate = this->camera->RenderRate();
 #else
 float rate = this->camera->GetRenderRate();
 #endif
-if (!isfinite(rate))
-rate =  30.0;
-float dt = 1.0 / rate;
+std::cout<<"Camera render rate: "<<rate<<endl;
+//if (!isfinite(rate))
+//rate =  30.0;
+//float dt = 1.0 / rate;
      */
+
+//std::cout<<"dvs frame time: "<<ros::Time::now()<<endl;
+auto frame_init = ros::Time::now();
 
     // convert given frame to opencv image
     cv::Mat input_image(_height, _width, CV_8UC3);
@@ -209,6 +222,11 @@ float dt = 1.0 / rate;
     {
       gzwarn << "Ignoring empty image." << endl;
     }
+
+    //auto frame_end = ros::Time::now();
+    //ros::Duration frame_proc_dur = frame_end-frame_init;
+    //if (frame_proc_dur.toSec() > 0.005)
+    //   std::cout<<"dvs frame proc time above th: "<<frame_proc_dur.toSec()<<endl;
   }
 
   void DvsPlugin::processDelta(cv::Mat *last_image, cv::Mat *curr_image)
@@ -252,8 +270,10 @@ float dt = 1.0 / rate;
       for (int i = 0; i < locs.size(); i++)
       {
         dvs_msgs::Event event;
-        event.x = locs[i].x;
-        event.y = locs[i].y;
+        event.x = locs[i].x >> this->subsample_factor_x;
+        event.y = locs[i].y >> this->subsample_factor_y;
+        //event.x = locs[i].x ;
+        //event.y = locs[i].y ;
         event.ts = ros::Time::now();
         event.polarity = polarity;
         events->push_back(event);
