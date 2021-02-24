@@ -288,8 +288,8 @@ auto frame_init = ros::Time::now();
       dvs_msgs::EventArray msg;
       msg.events.clear();
       msg.events.insert(msg.events.end(), events->begin(), events->end());
-      msg.width = width;
-      msg.height = height;
+      msg.width = this->width >> this->subsample_factor_x;
+      msg.height = this->height >> this->subsample_factor_y;
 
       // TODO what frame_id is adequate?
       msg.header.frame_id = namespace_;
